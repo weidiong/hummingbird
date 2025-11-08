@@ -1,0 +1,8 @@
+flask>=2.3.0
+flask-cors>=4.0.0
+pandas>=2.0.0
+plotly>=5.14.0
+python-dotenv>=1.0.0
+
+
+
