@@ -15,9 +15,9 @@ function SpiderPlot() {
   const [availableDoses, setAvailableDoses] = useState([])
   const [availableTumorTypes, setAvailableTumorTypes] = useState([])
   
-  const [selectedArms, setSelectedArms] = useState([])
-  const [selectedDoses, setSelectedDoses] = useState([])
-  const [selectedTumorTypes, setSelectedTumorTypes] = useState([])
+  const [selectedArm, setSelectedArm] = useState('all')
+  const [selectedDose, setSelectedDose] = useState('all')
+  const [selectedTumorType, setSelectedTumorType] = useState('all')
 
   // Fetch all data on mount to get available options
   useEffect(() => {
@@ -29,21 +29,21 @@ function SpiderPlot() {
     if (availableArms.length > 0) {
       fetchSpiderData()
     }
-  }, [selectedArms, selectedDoses, selectedTumorTypes])
+  }, [selectedArm, selectedDose, selectedTumorType])
 
   const fetchSpiderData = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
       
-      if (selectedArms.length > 0) {
-        params.append('arms', selectedArms.join(','))
+      if (selectedArm !== 'all') {
+        params.append('arms', selectedArm)
       }
-      if (selectedDoses.length > 0) {
-        params.append('doses', selectedDoses.join(','))
+      if (selectedDose !== 'all') {
+        params.append('doses', selectedDose)
       }
-      if (selectedTumorTypes.length > 0) {
-        params.append('tumor_types', selectedTumorTypes.join(','))
+      if (selectedTumorType !== 'all') {
+        params.append('tumor_types', selectedTumorType)
       }
       
       const response = await axios.get(`${API_BASE_URL}/spider?${params.toString()}`)
@@ -59,17 +59,6 @@ function SpiderPlot() {
       setAvailableArms(arms)
       setAvailableDoses(doses)
       setAvailableTumorTypes(tumorTypes)
-      
-      // Initialize selections if empty
-      if (selectedArms.length === 0 && arms.length > 0) {
-        setSelectedArms(arms)
-      }
-      if (selectedDoses.length === 0 && doses.length > 0) {
-        setSelectedDoses(doses)
-      }
-      if (selectedTumorTypes.length === 0 && tumorTypes.length > 0) {
-        setSelectedTumorTypes(tumorTypes)
-      }
       
       setError(null)
     } catch (err) {
@@ -139,35 +128,26 @@ function SpiderPlot() {
         mode: 'lines+markers',
         name: `${patient.subject_id} (${patient.arm}-${patient.dose}mg)`,
         line: { color: colorMap[colorKey] },
-        marker: { size: 6 }
+        marker: { size: 6 },
+        hovertemplate: `<b>${patient.subject_id}</b><br>` +
+                      `Weeks: %{x:.1f}<br>` +
+                      `% Change: %{y:.2f}%<extra></extra>`
       })
     })
 
     return traces
   }, [rawData])
 
-  const handleArmToggle = (arm) => {
-    setSelectedArms(prev => 
-      prev.includes(arm) 
-        ? prev.filter(a => a !== arm)
-        : [...prev, arm]
-    )
+  const handleArmChange = (e) => {
+    setSelectedArm(e.target.value)
   }
 
-  const handleDoseToggle = (dose) => {
-    setSelectedDoses(prev => 
-      prev.includes(dose) 
-        ? prev.filter(d => d !== dose)
-        : [...prev, dose]
-    )
+  const handleDoseChange = (e) => {
+    setSelectedDose(e.target.value)
   }
 
-  const handleTumorTypeToggle = (tumorType) => {
-    setSelectedTumorTypes(prev => 
-      prev.includes(tumorType) 
-        ? prev.filter(t => t !== tumorType)
-        : [...prev, tumorType]
-    )
+  const handleTumorTypeChange = (e) => {
+    setSelectedTumorType(e.target.value)
   }
 
   if (loading) {
@@ -183,44 +163,44 @@ function SpiderPlot() {
       <div className="filters-panel">
         <div className="filter-group">
           <h3>Treatment Arms</h3>
-          {availableArms.map(arm => (
-            <label key={arm} className="filter-checkbox">
-              <input
-                type="checkbox"
-                checked={selectedArms.includes(arm)}
-                onChange={() => handleArmToggle(arm)}
-              />
-              {arm}
-            </label>
-          ))}
+          <select 
+            className="filter-dropdown"
+            value={selectedArm}
+            onChange={handleArmChange}
+          >
+            <option value="all">All</option>
+            {availableArms.map(arm => (
+              <option key={arm} value={arm}>{arm}</option>
+            ))}
+          </select>
         </div>
 
         <div className="filter-group">
           <h3>Doses (mg)</h3>
-          {availableDoses.map(dose => (
-            <label key={dose} className="filter-checkbox">
-              <input
-                type="checkbox"
-                checked={selectedDoses.includes(dose)}
-                onChange={() => handleDoseToggle(dose)}
-              />
-              {dose}
-            </label>
-          ))}
+          <select 
+            className="filter-dropdown"
+            value={selectedDose}
+            onChange={handleDoseChange}
+          >
+            <option value="all">All</option>
+            {availableDoses.map(dose => (
+              <option key={dose} value={dose}>{dose}</option>
+            ))}
+          </select>
         </div>
 
         <div className="filter-group">
           <h3>Tumor Types</h3>
-          {availableTumorTypes.map(tumorType => (
-            <label key={tumorType} className="filter-checkbox">
-              <input
-                type="checkbox"
-                checked={selectedTumorTypes.includes(tumorType)}
-                onChange={() => handleTumorTypeToggle(tumorType)}
-              />
-              {tumorType}
-            </label>
-          ))}
+          <select 
+            className="filter-dropdown"
+            value={selectedTumorType}
+            onChange={handleTumorTypeChange}
+          >
+            <option value="all">All</option>
+            {availableTumorTypes.map(tumorType => (
+              <option key={tumorType} value={tumorType}>{tumorType}</option>
+            ))}
+          </select>
         </div>
       </div>
 

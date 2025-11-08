@@ -32,21 +32,26 @@
   font-weight: 600;
 }
 
-.filter-checkbox {
-  display: block;
-  padding: 8px 0;
-  cursor: pointer;
+.filter-dropdown {
+  width: 100%;
+  padding: 8px 12px;
   font-size: 0.9rem;
-  color: #555;
-}
-
-.filter-checkbox input {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-.filter-checkbox:hover {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
   color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filter-dropdown:hover {
+  border-color: #999;
+}
+
+.filter-dropdown:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
 }
 
 .plot-container {
