@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
-from routes import api_bp
+from .routes import api_bp
 
 # Load environment variables from .env file
 load_dotenv()

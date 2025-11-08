@@ -1,23 +1,7 @@
 from flask import Blueprint, jsonify
-import pandas as pd
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from .utils import load_data
 
 api_bp = Blueprint('api', __name__)
-
-CSV_PATH = os.getenv('CSV_PATH')
-
-def load_data():
-    """Load and return the CSV data as a DataFrame"""
-    try:
-        df = pd.read_csv(CSV_PATH)
-        return df
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        return pd.DataFrame()
 
 @api_bp.route('/health', methods=['GET'])
 def health_check():
@@ -34,8 +18,8 @@ def get_stats():
     
     # Calculate statistics
     unique_patients = df['subject_id'].nunique()
-    treatment_arms = df['arm'].unique().tolist()
-    dose_levels = sorted(df['dose'].unique().tolist())
+    treatment_arms = df['arm'].dropna().unique().tolist()
+    dose_levels = sorted(df['dose'].dropna().unique().tolist())
     
     return jsonify({
         'unique_patients': int(unique_patients),
