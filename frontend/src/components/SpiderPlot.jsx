@@ -9,7 +9,8 @@ const envApiUrl = import.meta.env.VITE_API_BASE_URL
 const API_BASE_URL = envApiUrl && envApiUrl.startsWith('http') ? envApiUrl : '/api'
 
 function SpiderPlot() {
-  const [rawData, setRawData] = useState([])
+  // Store all data fetched once on mount
+  const [allData, setAllData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -25,23 +26,20 @@ function SpiderPlot() {
   const [selectedDose, setSelectedDose] = useState('all')
   const [selectedTumorType, setSelectedTumorType] = useState('all')
 
-  // Fetch all data on mount to get available options (no filters)
+  // Fetch all data once on mount
   useEffect(() => {
-    fetchAllDataForOptions()
+    fetchAllData()
   }, [])
 
-  // Fetch filtered data when filters change (but not on initial mount)
-  useEffect(() => {
-    if (availableArms.length > 0 && colorMap && Object.keys(colorMap).length > 0) {
-      fetchSpiderData()
-    }
-  }, [selectedArm, selectedDose, selectedTumorType])
-
-  // Fetch all data once to populate dropdown options
-  const fetchAllDataForOptions = async () => {
+  // Fetch all data once to populate dropdown options and store for client-side filtering
+  const fetchAllData = async () => {
     try {
+      setLoading(true)
       const response = await axios.get(`${API_BASE_URL}/spider`)
       const data = response.data
+      
+      // Store all data for client-side filtering
+      setAllData(data)
       
       // Extract unique values for filters from ALL data
       const arms = [...new Set(data.map(d => d.arm).filter(Boolean))]
@@ -68,51 +66,56 @@ function SpiderPlot() {
       })
       
       setColorMap(newColorMap)
-      
-      // Fetch initial data for the plot after options are set
-      fetchSpiderData()
-    } catch (err) {
-      console.error('Error fetching options:', err)
-      setError('Failed to fetch data')
-      setLoading(false)
-    }
-  }
-
-  const fetchSpiderData = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      
-      if (selectedArm !== 'all') {
-        params.append('arms', selectedArm)
-      }
-      if (selectedDose !== 'all') {
-        params.append('doses', selectedDose)
-      }
-      if (selectedTumorType !== 'all') {
-        params.append('tumor_types', selectedTumorType)
-      }
-      
-      const response = await axios.get(`${API_BASE_URL}/spider?${params.toString()}`)
-      const data = response.data
-      
-      setRawData(data)
       setError(null)
     } catch (err) {
-      setError('Failed to fetch spider plot data')
-      console.error('Error fetching spider data:', err)
+      console.error('Error fetching data:', err)
+      setError('Failed to fetch data')
     } finally {
       setLoading(false)
     }
   }
 
-  // Process data for plotting
+  // Calculate max weeks from all data to set fixed x-axis range
+  const maxWeeks = useMemo(() => {
+    if (!allData || allData.length === 0) return 52 // Default to 52 weeks (1 year)
+    
+    const maxDays = Math.max(...allData
+      .map(d => d.days)
+      .filter(d => d != null && !isNaN(d) && d > 0)
+    )
+    
+    // Round up to nearest 4 weeks for cleaner axis
+    const weeks = Math.ceil(maxDays / 7)
+    return Math.ceil(weeks / 4) * 4 // Round to nearest 4 weeks
+  }, [allData])
+
+  // Client-side filtering - no API call needed
+  const filteredData = useMemo(() => {
+    if (!allData || allData.length === 0) return []
+    
+    let filtered = [...allData]
+    
+    // Apply filters
+    if (selectedArm !== 'all') {
+      filtered = filtered.filter(d => d.arm === selectedArm)
+    }
+    if (selectedDose !== 'all') {
+      filtered = filtered.filter(d => d.dose === parseFloat(selectedDose))
+    }
+    if (selectedTumorType !== 'all') {
+      filtered = filtered.filter(d => d.tumor_type === selectedTumorType)
+    }
+    
+    return filtered
+  }, [allData, selectedArm, selectedDose, selectedTumorType])
+
+  // Process filtered data for plotting
   const plotData = useMemo(() => {
-    if (!rawData || rawData.length === 0) return []
+    if (!filteredData || filteredData.length === 0) return []
 
     // Group by subject_id
     const grouped = {}
-    rawData.forEach(record => {
+    filteredData.forEach(record => {
       // Skip records with invalid subject_id
       if (!record.subject_id || 
           record.subject_id === 'nan' || 
@@ -176,7 +179,7 @@ function SpiderPlot() {
     })
 
     return traces
-  }, [rawData, colorMap])
+  }, [filteredData, colorMap])
 
   const handleArmChange = (e) => {
     setSelectedArm(e.target.value)
@@ -251,7 +254,10 @@ function SpiderPlot() {
             title: 'Tumor Size Change Over Time',
             xaxis: {
               title: 'Weeks on Treatment',
-              zeroline: true
+              zeroline: true,
+              range: [0, maxWeeks],
+              tickmode: 'linear',
+              dtick: 4
             },
             yaxis: {
               title: '% Change in Tumor Size',
