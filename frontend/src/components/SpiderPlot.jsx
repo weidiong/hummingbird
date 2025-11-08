@@ -15,13 +15,16 @@ function SpiderPlot() {
   const [availableDoses, setAvailableDoses] = useState([])
   const [availableTumorTypes, setAvailableTumorTypes] = useState([])
   
+  // Consistent color mapping - generated once from all possible combinations
+  const [colorMap, setColorMap] = useState({})
+  
   const [selectedArm, setSelectedArm] = useState('all')
   const [selectedDose, setSelectedDose] = useState('all')
   const [selectedTumorType, setSelectedTumorType] = useState('all')
 
-  // Fetch all data on mount to get available options
+  // Fetch all data on mount to get available options (no filters)
   useEffect(() => {
-    fetchSpiderData()
+    fetchAllDataForOptions()
   }, [])
 
   // Fetch filtered data when filters change
@@ -30,6 +33,42 @@ function SpiderPlot() {
       fetchSpiderData()
     }
   }, [selectedArm, selectedDose, selectedTumorType])
+
+  // Fetch all data once to populate dropdown options
+  const fetchAllDataForOptions = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/spider`)
+      const data = response.data
+      
+      // Extract unique values for filters from ALL data
+      const arms = [...new Set(data.map(d => d.arm).filter(Boolean))]
+      const doses = [...new Set(data.map(d => d.dose).filter(Boolean))].sort((a, b) => a - b)
+      const tumorTypes = [...new Set(data.map(d => d.tumor_type).filter(Boolean))]
+      
+      setAvailableArms(arms)
+      setAvailableDoses(doses)
+      setAvailableTumorTypes(tumorTypes)
+      
+      // Generate simple color map: Red for arm A, Green for arm B
+      const newColorMap = {}
+      arms.forEach(arm => {
+        doses.forEach(dose => {
+          const combo = `${arm}-${dose}`
+          if (arm === 'A') {
+            newColorMap[combo] = '#d32f2f' // Red
+          } else if (arm === 'B') {
+            newColorMap[combo] = '#2e7d32' // Green
+          } else {
+            newColorMap[combo] = '#666666' // Gray fallback
+          }
+        })
+      })
+      
+      setColorMap(newColorMap)
+    } catch (err) {
+      console.error('Error fetching options:', err)
+    }
+  }
 
   const fetchSpiderData = async () => {
     try {
@@ -50,16 +89,6 @@ function SpiderPlot() {
       const data = response.data
       
       setRawData(data)
-      
-      // Extract unique values for filters
-      const arms = [...new Set(data.map(d => d.arm).filter(Boolean))]
-      const doses = [...new Set(data.map(d => d.dose).filter(Boolean))].sort((a, b) => a - b)
-      const tumorTypes = [...new Set(data.map(d => d.tumor_type).filter(Boolean))]
-      
-      setAvailableArms(arms)
-      setAvailableDoses(doses)
-      setAvailableTumorTypes(tumorTypes)
-      
       setError(null)
     } catch (err) {
       setError('Failed to fetch spider plot data')
@@ -76,6 +105,14 @@ function SpiderPlot() {
     // Group by subject_id
     const grouped = {}
     rawData.forEach(record => {
+      // Skip records with invalid subject_id
+      if (!record.subject_id || 
+          record.subject_id === 'nan' || 
+          record.subject_id === 'NaN' ||
+          String(record.subject_id).toLowerCase() === 'nan') {
+        return
+      }
+      
       const subjectId = record.subject_id
       if (!grouped[subjectId]) {
         grouped[subjectId] = {
@@ -86,7 +123,9 @@ function SpiderPlot() {
           points: []
         }
       }
-      if (record.days !== null && record.change !== null) {
+      // Filter out NaN, null, or undefined values
+      if (record.days !== null && record.days !== undefined && !isNaN(record.days) &&
+          record.change !== null && record.change !== undefined && !isNaN(record.change)) {
         grouped[subjectId].points.push({
           days: record.days,
           change: record.change
@@ -96,8 +135,6 @@ function SpiderPlot() {
 
     // Process each patient's data
     const traces = []
-    const colorMap = {}
-    let colorIndex = 0
 
     Object.values(grouped).forEach(patient => {
       // Sort points by days
@@ -112,14 +149,9 @@ function SpiderPlot() {
         changes.push(point.change)
       })
 
-      // Create color key from arm and dose
+      // Create color key from arm and dose - use consistent color map
       const colorKey = `${patient.arm}-${patient.dose}`
-      if (!colorMap[colorKey]) {
-        // Generate distinct colors
-        const hue = (colorIndex * 137.508) % 360 // Golden angle approximation
-        colorMap[colorKey] = `hsl(${hue}, 70%, 50%)`
-        colorIndex++
-      }
+      const patientColor = colorMap[colorKey] || '#999999' // Fallback color if not in map
 
       traces.push({
         x: weeks,
@@ -127,7 +159,7 @@ function SpiderPlot() {
         type: 'scatter',
         mode: 'lines+markers',
         name: `${patient.subject_id} (${patient.arm}-${patient.dose}mg)`,
-        line: { color: colorMap[colorKey] },
+        line: { color: patientColor },
         marker: { size: 6 },
         hovertemplate: `<b>${patient.subject_id}</b><br>` +
                       `Weeks: %{x:.1f}<br>` +
@@ -136,7 +168,7 @@ function SpiderPlot() {
     })
 
     return traces
-  }, [rawData])
+  }, [rawData, colorMap])
 
   const handleArmChange = (e) => {
     setSelectedArm(e.target.value)
@@ -215,7 +247,10 @@ function SpiderPlot() {
             },
             yaxis: {
               title: '% Change in Tumor Size',
-              zeroline: true
+              zeroline: true,
+              range: [-100, 100],
+              tickmode: 'linear',
+              dtick: 20
             },
             hovermode: 'closest',
             showlegend: true,

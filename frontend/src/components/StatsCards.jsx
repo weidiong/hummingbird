@@ -32,14 +32,6 @@ function StatsCards({ stats }) {
           </p>
         </div>
       </div>
-
-      <div className="stat-card">
-        <div className="stat-icon">📊</div>
-        <div className="stat-content">
-          <h3>Total Records</h3>
-          <p className="stat-value">{stats.total_records}</p>
-        </div>
-      </div>
     </div>
   )
 }

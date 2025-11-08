@@ -26,7 +26,6 @@ def get_stats():
         'unique_patients': int(unique_patients),
         'treatment_arms': treatment_arms,
         'dose_levels': dose_levels,
-        'total_records': int(len(df))
     }), 200
 
 @api_bp.route('/data', methods=['GET'])
@@ -70,10 +69,20 @@ def get_spider_data():
     df = df.sort_values(['subject_id', 'days'])
     
     # Convert to list of dictionaries with required fields
+    # Filter out rows with NaN subject_id
     result = []
     for _, row in df.iterrows():
+        # Skip rows where subject_id is NaN
+        if pd.isna(row['subject_id']):
+            continue
+            
+        subject_id = str(row['subject_id'])
+        # Skip if subject_id is the string 'nan'
+        if subject_id.lower() == 'nan':
+            continue
+            
         result.append({
-            'subject_id': str(row['subject_id']),
+            'subject_id': subject_id,
             'arm': str(row['arm']) if pd.notna(row['arm']) else None,
             'dose': float(row['dose']) if pd.notna(row['dose']) else None,
             'tumor_type': str(row['tumor_type']) if pd.notna(row['tumor_type']) else None,
