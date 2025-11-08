@@ -28,17 +28,6 @@ def get_stats():
         'dose_levels': dose_levels,
     }), 200
 
-@api_bp.route('/data', methods=['GET'])
-def get_data():
-    """Get all data"""
-    df = load_data()
-    
-    if df.empty:
-        return jsonify({'error': 'No data available'}), 500
-    
-    # Convert DataFrame to JSON
-    return jsonify(df.to_dict('records')), 200
-
 @api_bp.route('/spider', methods=['GET'])
 def get_spider_data():
     """Get spider plot data with optional filtering"""
