@@ -3,7 +3,10 @@ import axios from 'axios'
 import Plot from 'react-plotly.js'
 import './SpiderPlot.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+// Use proxy path in development (Vite proxy handles /api -> backend)
+// If VITE_API_BASE_URL is set and contains full URL, use it; otherwise use proxy path
+const envApiUrl = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL = envApiUrl && envApiUrl.startsWith('http') ? envApiUrl : '/api'
 
 function SpiderPlot() {
   const [rawData, setRawData] = useState([])
@@ -27,9 +30,9 @@ function SpiderPlot() {
     fetchAllDataForOptions()
   }, [])
 
-  // Fetch filtered data when filters change
+  // Fetch filtered data when filters change (but not on initial mount)
   useEffect(() => {
-    if (availableArms.length > 0) {
+    if (availableArms.length > 0 && colorMap && Object.keys(colorMap).length > 0) {
       fetchSpiderData()
     }
   }, [selectedArm, selectedDose, selectedTumorType])
@@ -65,8 +68,13 @@ function SpiderPlot() {
       })
       
       setColorMap(newColorMap)
+      
+      // Fetch initial data for the plot after options are set
+      fetchSpiderData()
     } catch (err) {
       console.error('Error fetching options:', err)
+      setError('Failed to fetch data')
+      setLoading(false)
     }
   }
 
