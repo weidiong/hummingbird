@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 import pandas as pd
 from .utils import load_data
 
@@ -30,29 +30,11 @@ def get_stats():
 
 @api_bp.route('/spider', methods=['GET'])
 def get_spider_data():
-    """Get spider plot data with optional filtering"""
+    """Get spider plot data"""
     df = load_data()
     
     if df.empty:
         return jsonify({'error': 'No data available'}), 500
-    
-    # Get query parameters
-    arms_param = request.args.get('arms', '')
-    doses_param = request.args.get('doses', '')
-    tumor_types_param = request.args.get('tumor_types', '')
-    
-    # Apply filters if provided
-    if arms_param:
-        arms_list = [arm.strip() for arm in arms_param.split(',')]
-        df = df[df['arm'].isin(arms_list)]
-    
-    if doses_param:
-        doses_list = [float(dose.strip()) for dose in doses_param.split(',')]
-        df = df[df['dose'].isin(doses_list)]
-    
-    if tumor_types_param:
-        tumor_types_list = [tt.strip() for tt in tumor_types_param.split(',')]
-        df = df[df['tumor_type'].isin(tumor_types_list)]
     
     # Sort by subject_id and days to ensure proper ordering
     df = df.sort_values(['subject_id', 'days'])
