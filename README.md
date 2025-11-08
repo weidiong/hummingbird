@@ -63,11 +63,7 @@ To stop the servers:
 
 - `GET /api/health` - Health check endpoint
 - `GET /api/stats` - Get summary statistics (unique patients, treatment arms, dose levels)
-- `GET /api/spider` - Get spider plot data with optional filtering
-  - Query parameters:
-    - `arms`: Comma-separated list of treatment arms (e.g., `arms=A,B`)
-    - `doses`: Comma-separated list of doses (e.g., `doses=1800,3000`)
-    - `tumor_types`: Comma-separated list of tumor types (e.g., `tumor_types=sqNSCLC,HNSCC`)
+- `GET /api/spider` - Get spider plot data
 
 
 ## Features
