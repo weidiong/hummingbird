@@ -1,0 +1,84 @@
+.spider-plot-container {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.filters-panel {
+  min-width: 200px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  position: sticky;
+  top: 20px;
+}
+
+.filter-group {
+  margin-bottom: 24px;
+}
+
+.filter-group:last-child {
+  margin-bottom: 0;
+}
+
+.filter-group h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.filter-checkbox {
+  display: block;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.filter-checkbox input {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.filter-checkbox:hover {
+  color: #333;
+}
+
+.plot-container {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.loading {
+  color: #666;
+}
+
+@media (max-width: 1024px) {
+  .spider-plot-container {
+    flex-direction: column;
+  }
+  
+  .filters-panel {
+    position: static;
+  }
+}
+
