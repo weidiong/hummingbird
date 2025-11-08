@@ -31,7 +31,6 @@ Hummingbird/
 │   ├── index.html
 │   ├── vite.config.js         # Vite configuration
 │   └── package.json           # Node.js dependencies
-├── spiderplot.csv             # Clinical trial data
 ├── requirements.txt           # Python dependencies
 ├── pyproject.toml             # Python project configuration
 ├── start.sh                   # Script to start the application
